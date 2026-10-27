@@ -166,10 +166,14 @@ create_env() {
     [[ ! -f "$SHARED/.env" ]] || return 0
 
     step "Configuração (.env)"
-    echo "Crie primeiro a base de dados em DirectAdmin → MySQL Management e indique os dados:"
-    read -r -p "Nome da base de dados: " db_name
-    read -r -p "Utilizador da base de dados: " db_user
+    local suggestion="$(whoami)_tindziva"
+    echo "Crie primeiro a base de dados em DirectAdmin → MySQL Management e indique os dados."
+    echo "No DirectAdmin, os nomes levam o prefixo da conta (por exemplo ${suggestion})."
+    read -r -p "Nome da base de dados [${suggestion}]: " db_name
+    read -r -p "Utilizador da base de dados [${suggestion}]: " db_user
     read -r -s -p "Palavra-passe da base de dados: " db_password; echo
+    db_name="${db_name:-$suggestion}"
+    db_user="${db_user:-$suggestion}"
 
     umask 077
     cp "$1/.env.production.example" "$SHARED/.env"
@@ -234,7 +238,13 @@ cmd_install() {
     fi
 
     step "Ligação à base de dados"
-    artisan "$release" db:show --counts >/dev/null || fail "Não foi possível ligar à base de dados. Verifique $SHARED/.env."
+    local db_error
+    if ! db_error="$(cd "$release" && "$PHP_BIN" artisan db:show 2>&1)"; then
+        printf 'MySQL: %s\n' "$(printf '%s' "$db_error" | tr -s ' \n' ' ' | grep -o 'SQLSTATE.*' || printf '%s' "$db_error" | tr -s ' \n' ' ')" >&2
+        # Nothing is installed yet: discard the configuration so the next run asks for the details again.
+        rm -f "$SHARED/.env"
+        fail "Não foi possível ligar à base de dados. Confirme no DirectAdmin o nome (com o prefixo da conta), o utilizador e a palavra-passe, e execute de novo: bash server.sh install"
+    fi
 
     prepare_release "$release"
 
