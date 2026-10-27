@@ -44,7 +44,7 @@
 
         @if ($post->coverImage)
             <div class="container-site max-w-5xl">
-                <x-site.picture :media="$post->coverImage" eager sizes="(min-width: 1024px) 64rem, 100vw" class="-mt-2 aspect-[16/9] w-full rounded-[2rem] shadow-xl shadow-brown-900/10" />
+                <x-site.picture :media="$post->coverImage" eager fit="contain" sizes="(min-width: 1024px) 64rem, 100vw" class="-mt-2 mx-auto h-auto max-h-[85vh] w-auto max-w-full rounded-[2rem] shadow-xl shadow-brown-900/10" />
                 @if ($post->coverImage->caption)
                     <p class="mt-3 text-center text-sm text-ink/60">{{ $post->coverImage->caption }}</p>
                 @endif

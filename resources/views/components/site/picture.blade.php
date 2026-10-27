@@ -1,4 +1,4 @@
-@props(['media' => null, 'sizes' => '100vw', 'eager' => false, 'alt' => null, 'label' => null])
+@props(['media' => null, 'sizes' => '100vw', 'eager' => false, 'alt' => null, 'label' => null, 'fit' => 'cover'])
 
 @if ($media?->isImage())
     <img
@@ -9,7 +9,7 @@
         loading="{{ $eager ? 'eager' : 'lazy' }}"
         decoding="async"
         @if ($eager) fetchpriority="high" @endif
-        {{ $attributes->class('object-cover') }}
+        {{ $attributes->class($fit === 'contain' ? 'object-contain' : 'object-cover') }}
     >
 @else
     <x-site.placeholder :label="$label" {{ $attributes }} />
