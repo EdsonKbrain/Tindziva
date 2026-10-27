@@ -1,0 +1,267 @@
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/typography';
+@plugin '@tailwindcss/forms';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../../app/**/*.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+    --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+
+    /* Castanho-escuro #49200D */
+    --color-brown-50: #faf5f2;
+    --color-brown-100: #f3e7df;
+    --color-brown-200: #e6cdbd;
+    --color-brown-300: #d2a78c;
+    --color-brown-400: #b97a57;
+    --color-brown-500: #8f5232;
+    --color-brown-600: #6e3a1e;
+    --color-brown-700: #5a2d15;
+    --color-brown-800: #49200d;
+    --color-brown-900: #3a190a;
+    --color-brown-950: #241005;
+
+    /* Laranja-acastanhado #A64B08 */
+    --color-ochre-50: #fdf6ef;
+    --color-ochre-100: #fbe8d6;
+    --color-ochre-200: #f5cba6;
+    --color-ochre-300: #eea56d;
+    --color-ochre-400: #e07f3a;
+    --color-ochre-500: #c8641a;
+    --color-ochre-600: #a64b08;
+    --color-ochre-700: #873c08;
+    --color-ochre-800: #6c310b;
+    --color-ochre-900: #58290c;
+
+    --color-ink: #333333;
+    --color-mist: #f3f3f3;
+    --color-cream: #fbf8f5;
+
+    --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+    --animate-float: float 7s ease-in-out infinite;
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        @apply bg-white font-sans text-ink antialiased;
+        text-rendering: optimizeLegibility;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-display tracking-tight text-brown-800;
+        text-wrap: balance;
+    }
+
+    p {
+        text-wrap: pretty;
+    }
+
+    ::selection {
+        @apply bg-ochre-600 text-white;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-ochre-600;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+}
+
+@layer components {
+    .container-site {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    .eyebrow {
+        @apply inline-flex items-center gap-2 font-display text-xs font-semibold tracking-[0.2em] text-ochre-600 uppercase;
+    }
+
+    .eyebrow::before {
+        content: '';
+        @apply h-px w-8 bg-current;
+    }
+
+    .accent-serif {
+        @apply font-serif font-normal italic tracking-normal text-ochre-600;
+    }
+
+    /* Content produced by the WYSIWYG editor */
+    .prose-tindziva {
+        @apply prose prose-lg max-w-none prose-headings:font-display prose-headings:text-brown-800 prose-p:text-ink/85 prose-a:text-ochre-700 prose-a:decoration-ochre-300 prose-a:underline-offset-4 hover:prose-a:decoration-ochre-600 prose-blockquote:border-ochre-600 prose-blockquote:font-serif prose-blockquote:text-2xl prose-blockquote:font-normal prose-blockquote:text-brown-800 prose-strong:text-brown-800 prose-img:rounded-2xl prose-li:marker:text-ochre-600;
+    }
+
+    .prose-tindziva iframe {
+        @apply aspect-video h-auto w-full rounded-2xl;
+    }
+
+    .prose-tindziva .ql-align-center {
+        text-align: center;
+    }
+
+    .prose-tindziva .ql-align-right {
+        text-align: right;
+    }
+
+    .form-input-site {
+        @apply block w-full rounded-xl border-brown-100 bg-white px-4 py-3 text-ink shadow-none transition placeholder:text-ink/40 focus:border-ochre-600 focus:ring-4 focus:ring-ochre-600/10;
+    }
+
+    .form-label-site {
+        @apply mb-1.5 block text-sm font-medium text-brown-800;
+    }
+
+    /* Tiled speech-bubble pattern from the Tindziva portfolio deck */
+    .bg-bubbles {
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27132%27%20height%3D%27108%27%20viewBox%3D%270%200%20132%20108%27%3E%3Cg%20fill%3D%27%23efe1d6%27%3E%3Cpath%20d%3D%27M14%2052c0-13%2013-23%2030-23s30%2010%2030%2023-13%2023-30%2023c-4%200-8-1-11-2l-14%207%204-10c-6-4-9-11-9-18z%27/%3E%3Cpath%20d%3D%27M36%2040c0-14%2014-25%2032-25s32%2011%2032%2025c0%206-3%2012-8%2016l5%2012-15-8c-4%201-9%202-14%202-18%200-32-10-32-22z%27%20opacity%3D%27.75%27/%3E%3C/g%3E%3C/svg%3E");
+        background-size: 132px 108px;
+    }
+
+    .bg-bubbles-dark {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .bg-bubbles-dark::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27132%27%20height%3D%27108%27%20viewBox%3D%270%200%20132%20108%27%3E%3Cg%20fill%3D%27%23ffffff%27%3E%3Cpath%20d%3D%27M14%2052c0-13%2013-23%2030-23s30%2010%2030%2023-13%2023-30%2023c-4%200-8-1-11-2l-14%207%204-10c-6-4-9-11-9-18z%27/%3E%3Cpath%20d%3D%27M36%2040c0-14%2014-25%2032-25s32%2011%2032%2025c0%206-3%2012-8%2016l5%2012-15-8c-4%201-9%202-14%202-18%200-32-10-32-22z%27%20opacity%3D%27.75%27/%3E%3C/g%3E%3C/svg%3E");
+        background-size: 132px 108px;
+        opacity: 0.05;
+        pointer-events: none;
+    }
+
+    /* Speech-bubble panel with a tail, as used on the deck's section openers */
+    .speech-panel {
+        position: relative;
+        border-radius: 3rem;
+    }
+
+    .speech-panel::after {
+        content: '';
+        position: absolute;
+        right: 16%;
+        bottom: -2.5rem;
+        width: 4rem;
+        height: 4rem;
+        background-color: var(--color-ochre-700);
+        clip-path: polygon(0 0, 65% 0, 100% 100%);
+    }
+
+    @media (min-width: 1024px) {
+        .speech-panel {
+            border-radius: 50% 50% 50% 50% / 56% 56% 44% 44%;
+        }
+
+        .speech-panel::after {
+            right: 19%;
+            bottom: -3.25rem;
+            width: 6.5rem;
+            height: 7rem;
+        }
+    }
+
+    .marquee {
+        mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    }
+
+    .marquee-track {
+        animation: marquee 60s linear infinite;
+    }
+
+    .marquee:hover .marquee-track {
+        animation-play-state: paused;
+    }
+
+    @keyframes marquee {
+        to { transform: translateX(-50%); }
+    }
+
+    /* Bubble motif borrowed from the logo */
+    .bubble {
+        border-radius: 50% 50% 50% 50% / 55% 55% 45% 45%;
+    }
+
+    .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 0.8s var(--ease-out-soft), transform 0.8s var(--ease-out-soft);
+    }
+
+    .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+    }
+
+    .no-js .reveal {
+        opacity: 1;
+        transform: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .marquee-track {
+            animation: none;
+        }
+
+        .reveal {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    /* Admin */
+    .admin-input {
+        @apply block w-full rounded-lg border-gray-300 text-sm text-gray-900 shadow-xs focus:border-ochre-600 focus:ring-ochre-600;
+    }
+
+    .admin-label {
+        @apply mb-1 block text-sm font-medium text-gray-700;
+    }
+
+    .admin-card {
+        @apply rounded-xl border border-gray-200 bg-white shadow-xs;
+    }
+
+    .ql-toolbar.ql-snow {
+        @apply rounded-t-lg border-gray-300 bg-gray-50 font-sans;
+    }
+
+    .ql-container.ql-snow {
+        @apply min-h-64 rounded-b-lg border-gray-300 font-sans text-base;
+    }
+
+    .ql-editor {
+        @apply min-h-64 prose max-w-none;
+    }
+}

@@ -1,0 +1,6 @@
+# Crontab for the "tindziva" user (installed by provision.sh with: crontab -u tindziva deploy/crontab).
+# Laravel scheduler: publishes scheduled posts every minute and prunes old activity logs.
+* * * * * cd /var/www/tindziva && php artisan schedule:run >> /dev/null 2>&1
+
+# Nightly backup of the MySQL database and uploaded files, keeping 14 days.
+30 2 * * * /var/www/tindziva/deploy/backup.sh /var/www/tindziva /var/backups/tindziva 14 >> /var/www/tindziva/storage/logs/backup.log 2>&1
