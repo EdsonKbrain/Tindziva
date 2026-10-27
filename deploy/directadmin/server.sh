@@ -169,9 +169,11 @@ create_env() {
     local suggestion="$(whoami)_tindziva"
     echo "Crie primeiro a base de dados em DirectAdmin → MySQL Management e indique os dados."
     echo "No DirectAdmin, os nomes levam o prefixo da conta (por exemplo ${suggestion})."
+    read -r -p "Servidor MySQL [localhost]: " db_host
     read -r -p "Nome da base de dados [${suggestion}]: " db_name
     read -r -p "Utilizador da base de dados [${suggestion}]: " db_user
     read -r -s -p "Palavra-passe da base de dados: " db_password; echo
+    db_host="${db_host:-localhost}"
     db_name="${db_name:-$suggestion}"
     db_user="${db_user:-$suggestion}"
 
@@ -179,6 +181,7 @@ create_env() {
     cp "$1/.env.production.example" "$SHARED/.env"
     sed -i \
         -e "s|^APP_URL=.*|APP_URL=https://${DOMAIN}|" \
+        -e "s|^DB_HOST=.*|DB_HOST=${db_host}|" \
         -e "s|^DB_DATABASE=.*|DB_DATABASE=${db_name}|" \
         -e "s|^DB_USERNAME=.*|DB_USERNAME=${db_user}|" \
         "$SHARED/.env"
