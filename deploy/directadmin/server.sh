@@ -162,8 +162,11 @@ install_cron() {
     echo "Cron instalado: scheduler a cada minuto e backup diário às 02:30."
 }
 
+ENV_CREATED_NOW=0
+
 create_env() {
     [[ ! -f "$SHARED/.env" ]] || return 0
+    ENV_CREATED_NOW=1
 
     step "Configuração (.env)"
     local suggestion="$(whoami)_tindziva"
@@ -242,11 +245,14 @@ cmd_install() {
 
     step "Ligação à base de dados"
     local db_error
-    if ! db_error="$(cd "$release" && "$PHP_BIN" artisan db:show 2>&1)"; then
+    if ! db_error="$(cd "$release" && "$PHP_BIN" artisan tindziva:check-database 2>&1)"; then
         printf 'MySQL: %s\n' "$(printf '%s' "$db_error" | tr -s ' \n' ' ' | grep -o 'SQLSTATE.*' || printf '%s' "$db_error" | tr -s ' \n' ' ')" >&2
-        # Nothing is installed yet: discard the configuration so the next run asks for the details again.
-        rm -f "$SHARED/.env"
-        fail "Não foi possível ligar à base de dados. Confirme no DirectAdmin o nome (com o prefixo da conta), o utilizador e a palavra-passe, e execute de novo: bash server.sh install"
+        if [[ "$ENV_CREATED_NOW" == "1" ]]; then
+            # The details were typed in this run: discard them so the next run asks again.
+            rm -f "$SHARED/.env"
+            fail "Não foi possível ligar à base de dados. Confirme no DirectAdmin o nome (com o prefixo da conta), o utilizador e a palavra-passe, e execute de novo: bash server.sh install"
+        fi
+        fail "Não foi possível ligar à base de dados. Corrija os dados DB_* em $SHARED/.env e execute de novo: bash server.sh install"
     fi
 
     prepare_release "$release"
