@@ -10,8 +10,8 @@
 #   public_html -> app/current/public
 #
 # Usage:
-#   bash server.sh install <pacote.tar.gz>    first installation
-#   bash server.sh update  <pacote.tar.gz>    publish a new release (no downtime)
+#   bash server.sh install [pacote.tar.gz]    first installation (from GitHub when no package is given)
+#   bash server.sh update  [pacote.tar.gz]    publish a new release without downtime (from GitHub by default)
 #   bash server.sh rollback                   return to the previous release
 #   bash server.sh refresh                    re-cache configuration after editing app/shared/.env
 #   bash server.sh status                     show the active release and checks
@@ -25,6 +25,9 @@ RELEASES="$APP_BASE/releases"
 SHARED="$APP_BASE/shared"
 CURRENT="$APP_BASE/current"
 PHP_BIN="${PHP_BIN:-$(command -v php)}"
+COMPOSER_BIN="${COMPOSER_BIN:-$(command -v composer || echo "$HOME/bin/composer")}"
+REPO_URL="${REPO_URL:-https://github.com/EdsonKbrain/Tindziva.git}"
+REPO_BRANCH="${REPO_BRANCH:-production}"
 KEEP_RELEASES=3
 
 step() { printf '\n\033[1;33m==> %s\033[0m\n' "$1"; }
@@ -38,6 +41,33 @@ check_php() {
     local missing
     missing="$("$PHP_BIN" -r 'echo implode(" ", array_diff(["pdo_mysql","gd","intl","mbstring","exif","fileinfo","zip","curl","xml","openssl"], array_map("strtolower", get_loaded_extensions())));')"
     [[ -z "$missing" ]] || fail "Extensões PHP em falta: $missing"
+}
+
+fetch_release() {
+    if [[ -n "${1:-}" ]]; then
+        extract_release "$1"
+    else
+        clone_release
+    fi
+}
+
+# Download the compiled "production" branch from GitHub and install the PHP dependencies.
+clone_release() {
+    local target="$RELEASES/tindziva-$(date +%Y%m%d-%H%M%S)"
+
+    git clone --quiet --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" "$target" >&2 \
+        || fail "Não foi possível descarregar $REPO_URL ($REPO_BRANCH)."
+    git -C "$target" rev-parse --short HEAD > "$target/REVISION"
+    rm -rf "$target/.git"
+
+    [[ -f "$target/public/build/manifest.json" ]] \
+        || fail "O branch $REPO_BRANCH não tem os assets compilados (public/build). Confirme que o GitHub Actions terminou."
+
+    (cd "$target" && "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress >&2) \
+        || fail "O composer install falhou."
+
+    rm -rf "$target/tests" "$target/phpunit.xml" "$target/CLAUDE.md" "$target/AGENTS.md" "$target/boost.json" "$target/.github"
+    echo "$target"
 }
 
 extract_release() {
@@ -153,13 +183,13 @@ create_env() {
 }
 
 cmd_install() {
-    local package="${1:?Indique o pacote .tar.gz}"
+    local package="${1:-}"
     check_php
     mkdir -p "$RELEASES" "$SHARED"
 
-    step "A extrair o pacote"
+    step "A obter a versão ${package:-do GitHub ($REPO_BRANCH)}"
     local release
-    release="$(extract_release "$package")"
+    release="$(fetch_release "$package")"
 
     create_env "$release"
     link_shared "$release"
@@ -197,13 +227,13 @@ DONE
 }
 
 cmd_update() {
-    local package="${1:?Indique o pacote .tar.gz}"
-    [[ -L "$CURRENT" ]] || fail "Ainda não existe instalação. Use: bash server.sh install <pacote>"
+    local package="${1:-}"
+    [[ -L "$CURRENT" ]] || fail "Ainda não existe instalação. Use: bash server.sh install"
     check_php
 
-    step "A extrair o pacote"
+    step "A obter a versão ${package:-do GitHub ($REPO_BRANCH)}"
     local release
-    release="$(extract_release "$package")"
+    release="$(fetch_release "$package")"
     link_shared "$release"
 
     prepare_release "$release"

@@ -201,46 +201,37 @@ O alojamento da Tindziva é partilhado, com DirectAdmin, sem root e sem Node.js.
         └── storage/     uploads, logs, cache e sessões
 ```
 
+O código está em [github.com/EdsonKbrain/Tindziva](https://github.com/EdsonKbrain/Tindziva). Em cada `git push` para `main`, o GitHub Actions ([production.yml](.github/workflows/production.yml)) corre os testes, compila os assets e publica o branch `production`. O servidor instala sempre a partir desse branch.
+
 ### Primeira instalação
 
 1. **No DirectAdmin:**
-   - Em **MySQL Management**, crie a base de dados e o utilizador e guarde os dados.
-   - Em **E-mail Accounts**, crie `nao-responder@tindziva.co.mz` para o envio de e-mails.
-   - Confirme que o domínio usa PHP 8.3 ou superior (**Select PHP version**).
-2. **No computador de desenvolvimento**, com tudo em commit, crie o pacote e envie-o:
+   - Em **MySQL Management**, crie a base de dados e o utilizador.
+   - Em **E-mail Accounts**, crie `nao-responder@tindziva.co.mz`.
+   - Confirme que o domínio usa PHP 8.3 ou superior.
+2. **No servidor (SSH):**
 
    ```bash
-   deploy/directadmin/build-release.sh
-   scp dist/tindziva-*.tar.gz dist/server.sh aemozorg@<servidor>:~/
+   cd ~/domains/tindziva.co.mz
+   curl -fsSLO https://raw.githubusercontent.com/EdsonKbrain/Tindziva/main/deploy/directadmin/server.sh
+   bash server.sh install
    ```
 
-   Em alternativa ao `scp`, pode carregar os dois ficheiros na pasta pessoal pelo **File Manager** do DirectAdmin.
-3. **No servidor (SSH):**
-
-   ```bash
-   bash ~/server.sh install ~/tindziva-<versão>.tar.gz
-   ```
-
-   O script pede os dados do MySQL e cria o `.env`. Depois executa as migrations e o conteúdo essencial, guarda a `public_html` original em `public_html.backup-…` e liga-a ao Laravel. Instala também o cron (scheduler e backup) e cria o superadministrador.
-4. **No DirectAdmin:** em **Domain Setup → SSL Certificates**, active o Let's Encrypt e a opção **Force SSL with https redirect**.
-5. Preencha `MAIL_HOST` (normalmente `mail.tindziva.co.mz`), `MAIL_USERNAME` e `MAIL_PASSWORD` em `~/domains/tindziva.co.mz/app/shared/.env` e aplique:
-
-   ```bash
-   bash ~/domains/tindziva.co.mz/app/current/deploy/directadmin/server.sh refresh
-   ```
+   O script descarrega o branch `production` e instala as dependências PHP. Depois pede os dados do MySQL e cria o `.env`, executa as migrations e o conteúdo essencial, liga a `public_html` ao Laravel (a original fica em `public_html.backup-…`), instala o cron e cria o superadministrador.
+3. **No DirectAdmin:** em **SSL Certificates**, active o Let's Encrypt e a opção **Force SSL with https redirect**.
+4. Preencha `MAIL_HOST`, `MAIL_USERNAME` e `MAIL_PASSWORD` em `app/shared/.env` e aplique com `bash ~/domains/tindziva.co.mz/app/current/deploy/directadmin/server.sh refresh`.
 
 ### Publicar actualizações
 
 ```bash
 # no computador de desenvolvimento
-deploy/directadmin/build-release.sh
-scp dist/tindziva-<nova-versão>.tar.gz aemozorg@<servidor>:~/
+git push                 # aguarde que o GitHub Actions termine (separador «Actions»)
 
 # no servidor
-bash ~/domains/tindziva.co.mz/app/current/deploy/directadmin/server.sh update ~/tindziva-<nova-versão>.tar.gz
+bash ~/domains/tindziva.co.mz/app/current/deploy/directadmin/server.sh update
 ```
 
-A nova versão é preparada à parte (dependências, migrations e caches) e só depois fica activa, sem tempo de inactividade.
+A nova versão é preparada à parte (dependências, migrations e caches) e só depois fica activa, sem tempo de inactividade. Em alternativa ao GitHub, pode gerar um pacote local com `deploy/directadmin/build-release.sh` e instalá-lo com `server.sh install <pacote.tar.gz>` ou `server.sh update <pacote.tar.gz>`.
 
 Outros comandos do mesmo script:
 

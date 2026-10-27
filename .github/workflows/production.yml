@@ -1,0 +1,56 @@
+# Runs the tests, compiles the assets and publishes the "production" branch,
+# which the DirectAdmin server (no Node.js) installs with deploy/directadmin/server.sh.
+name: Testes e build de produção
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: gd, intl, exif, zip, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Dependências
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci --no-audit --no-fund
+
+      - name: Assets
+        run: npm run build
+
+      - name: Testes
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test --compact
+
+      - name: Publicar branch production
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B production
+          git add -f public/build
+          git commit -m "Build de produção ${GITHUB_SHA::7}"
+          git push --force origin production
