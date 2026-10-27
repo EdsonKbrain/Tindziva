@@ -63,8 +63,13 @@ clone_release() {
     [[ -f "$target/public/build/manifest.json" ]] \
         || fail "O branch $REPO_BRANCH não tem os assets compilados (public/build). Confirme que o GitHub Actions terminou."
 
-    (cd "$target" && "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress >&2) \
-        || fail "O composer install falhou."
+    # --no-scripts: Composer scripts run "php artisan" in a child process, which needs proc_open
+    # (disabled on this hosting). Package discovery is run directly afterwards instead.
+    if ! (cd "$target" && "$PHP_BIN" "$COMPOSER_BIN" install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress --no-scripts >&2 \
+        && "$PHP_BIN" artisan package:discover >&2); then
+        rm -rf "$target"
+        fail "A instalação das dependências PHP falhou."
+    fi
 
     rm -rf "$target/tests" "$target/phpunit.xml" "$target/CLAUDE.md" "$target/AGENTS.md" "$target/boost.json" "$target/.github"
     echo "$target"
@@ -182,10 +187,40 @@ create_env() {
     chmod 600 "$SHARED/.env"
 }
 
+create_admin() {
+    step "Superadministrador"
+    echo "Palavra-passe: mínimo de 10 caracteres, com maiúsculas, minúsculas e números."
+
+    while true; do
+        read -r -p "Nome completo: " admin_name
+        read -r -p "E-mail: " admin_email
+        read -r -s -p "Palavra-passe: " admin_password; echo
+        read -r -s -p "Confirmar palavra-passe: " admin_confirmation; echo
+
+        if [[ "$admin_password" != "$admin_confirmation" ]]; then
+            echo "As palavras-passe não coincidem. Tente novamente."
+            continue
+        fi
+
+        if (cd "$CURRENT" && TINDZIVA_ADMIN_PASSWORD="$admin_password" "$PHP_BIN" artisan tindziva:create-admin \
+            --name="$admin_name" --email="$admin_email" --no-interaction); then
+            break
+        fi
+
+        echo "Corrija os dados indicados e tente novamente."
+    done
+
+    unset admin_password admin_confirmation
+}
+
 cmd_install() {
     local package="${1:-}"
+    [[ ! -L "$CURRENT" ]] || fail "O website já está instalado. Para publicar uma nova versão use: bash server.sh update"
     check_php
     mkdir -p "$RELEASES" "$SHARED"
+
+    # Remove releases left behind by an interrupted installation (nothing is active yet).
+    rm -rf "${RELEASES:?}"/*
 
     step "A obter a versão ${package:-do GitHub ($REPO_BRANCH)}"
     local release
@@ -211,8 +246,7 @@ cmd_install() {
     install_cron
 
     if [[ "${SKIP_ADMIN:-0}" != "1" ]]; then
-        step "Superadministrador"
-        artisan "$CURRENT" tindziva:create-admin
+        create_admin
     fi
 
     step "Instalação concluída"

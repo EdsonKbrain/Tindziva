@@ -33,4 +33,18 @@ class CreateSuperAdminCommandTest extends TestCase
 
         $this->assertDatabaseCount('users', 0);
     }
+
+    public function test_it_reads_the_password_from_the_environment_without_prompts(): void
+    {
+        putenv('TINDZIVA_ADMIN_PASSWORD=Segura2026Tz');
+
+        try {
+            $this->artisan('tindziva:create-admin', ['--name' => 'Direcção', '--email' => 'admin@tindziva.test', '--no-interaction' => true])
+                ->assertSuccessful();
+        } finally {
+            putenv('TINDZIVA_ADMIN_PASSWORD');
+        }
+
+        $this->assertTrue(Hash::check('Segura2026Tz', User::where('email', 'admin@tindziva.test')->sole()->password));
+    }
 }

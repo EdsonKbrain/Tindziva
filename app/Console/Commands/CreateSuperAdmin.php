@@ -15,18 +15,22 @@ use function Laravel\Prompts\password;
 use function Laravel\Prompts\text;
 
 #[Signature('tindziva:create-admin {--name= : Nome completo} {--email= : Endereço de e-mail}')]
-#[Description('Create a super administrator account with a strong password entered interactively')]
+#[Description('Create a super administrator account; the password is asked interactively or read from TINDZIVA_ADMIN_PASSWORD')]
 class CreateSuperAdmin extends Command
 {
     public function handle(): int
     {
+        // Hosting without proc_open cannot run interactive prompts, so the deploy script asks for the
+        // password in bash and passes it through the environment (never as a visible argument).
+        $environmentPassword = getenv('TINDZIVA_ADMIN_PASSWORD') ?: null;
+
         $name = $this->option('name') ?: text('Nome completo', required: true);
         $email = strtolower((string) ($this->option('email') ?: text('E-mail', required: true)));
-        $password = (string) password(
+        $password = $environmentPassword ?? (string) password(
             'Palavra-passe (mín. 10 caracteres, maiúsculas, minúsculas e números)',
             required: true,
         );
-        $confirmation = (string) password('Confirmar palavra-passe', required: true);
+        $confirmation = $environmentPassword ?? (string) password('Confirmar palavra-passe', required: true);
 
         $validator = Validator::make(
             ['name' => $name, 'email' => $email, 'password' => $password, 'password_confirmation' => $confirmation],
