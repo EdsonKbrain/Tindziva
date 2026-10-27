@@ -186,6 +186,70 @@ php artisan icons:cache       # cache dos ícones Lucide
 
 ---
 
+## Deploy em alojamento DirectAdmin (servidor actual)
+
+O alojamento da Tindziva é partilhado, com DirectAdmin, sem root e sem Node.js. Por isso, os assets são compilados no computador de desenvolvimento e enviados num pacote. No servidor, cada versão fica numa pasta própria e `public_html` aponta para a versão activa:
+
+```
+~/domains/tindziva.co.mz/
+├── public_html -> app/current/public
+└── app/
+    ├── current -> releases/<versão activa>
+    ├── releases/        últimas 3 versões
+    └── shared/
+        ├── .env         configuração de produção (permissões 600)
+        └── storage/     uploads, logs, cache e sessões
+```
+
+### Primeira instalação
+
+1. **No DirectAdmin:**
+   - Em **MySQL Management**, crie a base de dados e o utilizador e guarde os dados.
+   - Em **E-mail Accounts**, crie `nao-responder@tindziva.co.mz` para o envio de e-mails.
+   - Confirme que o domínio usa PHP 8.3 ou superior (**Select PHP version**).
+2. **No computador de desenvolvimento**, com tudo em commit, crie o pacote e envie-o:
+
+   ```bash
+   deploy/directadmin/build-release.sh
+   scp dist/tindziva-*.tar.gz dist/server.sh aemozorg@<servidor>:~/
+   ```
+
+   Em alternativa ao `scp`, pode carregar os dois ficheiros na pasta pessoal pelo **File Manager** do DirectAdmin.
+3. **No servidor (SSH):**
+
+   ```bash
+   bash ~/server.sh install ~/tindziva-<versão>.tar.gz
+   ```
+
+   O script pede os dados do MySQL e cria o `.env`. Depois executa as migrations e o conteúdo essencial, guarda a `public_html` original em `public_html.backup-…` e liga-a ao Laravel. Instala também o cron (scheduler e backup) e cria o superadministrador.
+4. **No DirectAdmin:** em **Domain Setup → SSL Certificates**, active o Let's Encrypt e a opção **Force SSL with https redirect**.
+5. Preencha `MAIL_HOST` (normalmente `mail.tindziva.co.mz`), `MAIL_USERNAME` e `MAIL_PASSWORD` em `~/domains/tindziva.co.mz/app/shared/.env` e aplique:
+
+   ```bash
+   bash ~/domains/tindziva.co.mz/app/current/deploy/directadmin/server.sh refresh
+   ```
+
+### Publicar actualizações
+
+```bash
+# no computador de desenvolvimento
+deploy/directadmin/build-release.sh
+scp dist/tindziva-<nova-versão>.tar.gz aemozorg@<servidor>:~/
+
+# no servidor
+bash ~/domains/tindziva.co.mz/app/current/deploy/directadmin/server.sh update ~/tindziva-<nova-versão>.tar.gz
+```
+
+A nova versão é preparada à parte (dependências, migrations e caches) e só depois fica activa, sem tempo de inactividade.
+
+Outros comandos do mesmo script:
+
+| Comando | O que faz |
+|---|---|
+| `server.sh rollback` | Volta à versão anterior |
+| `server.sh refresh` | Recarrega a configuração depois de editar o `.env` |
+| `server.sh status` | Mostra a versão activa, o PHP e as tarefas agendadas |
+
 ## Deploy num VPS (Ubuntu 22.04 / 24.04)
 
 Os ficheiros de deploy estão em [deploy/](deploy/):

@@ -61,6 +61,7 @@ link_shared() {
         cp -R "$release/storage" "$SHARED/storage"
     fi
 
+    chmod 600 "$SHARED/.env"
     rm -rf "$release/storage"
     ln -s "$SHARED/storage" "$release/storage"
     ln -sfn "$SHARED/.env" "$release/.env"
